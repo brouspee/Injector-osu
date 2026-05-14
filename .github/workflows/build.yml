@@ -25,6 +25,8 @@ jobs:
           mkdir -p android-sdk/cmdline-tools
           mv cmdline-tools android-sdk/cmdline-tools/latest
           export ANDROID_HOME=$HOME/android-sdk
+          echo "Created ANDROID_HOME: $ANDROID_HOME"
+          ls -la android-sdk/
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
@@ -42,9 +44,15 @@ jobs:
         run: |
           export ANDROID_HOME=$HOME/android-sdk
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          chmod +x gradlew
-          chmod +x gradle/wrapper/gradle-wrapper.jar
-          ./gradlew clean assembleDebug --no-daemon
+          echo "===== Building APK ====="
+          echo "PWD: $(pwd)"
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          echo "local.properties: $(cat local.properties)"
+          ls -la app/ || echo "app directory doesn't exist"
+          ls -la gradlew
+          echo "===== Running gradle =====" 
+          ./gradlew clean assembleDebug --no-daemon --console=plain:plain
+          echo "===== Gradle done ====="
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
