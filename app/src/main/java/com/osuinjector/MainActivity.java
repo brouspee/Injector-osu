@@ -98,24 +98,9 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void inject() {
-        // Запускаем оверлей сервис
+        // Простой инжект без оверлея
         try {
-            // Проверяем разрешение на оверлей
-            if (!Settings.canDrawOverlays(this)) {
-                txtStatus.setText("Please grant overlay permission!");
-                Intent intent = new Intent(
-                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    android.net.Uri.parse("package:" + getPackageName())
-                );
-                startActivity(intent);
-                return;
-            }
-            
-            // Запускаем foreground сервис
-            Intent serviceIntent = new Intent(this, OverlayService.class);
-            startForegroundService(serviceIntent);
-            txtStatus.setText("Overlay started!");
-            
+            txtStatus.setText("DLL ready! Settings saved.");
         } catch (Exception e) {
             txtStatus.setText("Error: " + e.getMessage());
         }
@@ -124,7 +109,6 @@ public class MainActivity extends AppCompatActivity {
     private void patchDLL() {
         // Генерируем DLL с текущими настройками
         try {
-            // Здесь нужен компилятор C# -暫时不 реализовано
             txtStatus.setText("DLL patching requires build server.");
         } catch (Exception e) {
             txtStatus.setText("Error: " + e.getMessage());
