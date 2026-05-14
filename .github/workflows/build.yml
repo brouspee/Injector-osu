@@ -27,7 +27,6 @@ jobs:
       - name: Install SDK
         if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
-          echo "Installing Android SDK..."
           mkdir -p /opt/android-sdk
           cd /opt
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
@@ -46,30 +45,16 @@ jobs:
         run: cd OsuInjectorMod && dotnet restore && dotnet build -c Release
 
       - name: Build APK
-        continue-on-error: true
         run: |
           echo "sdk.dir=/opt/android-sdk" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug 2>&1 | tee gradle.log || true
-          echo "===GRADLE OUTPUT==="
-          cat gradle.log
-
-      - name: Check outputs
-        run: |
-          echo "=== Checking outputs ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "no apk found"
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: osu-injector.apk
           path: app/build/outputs/apk/debug/app-debug.apk
-
-      - name: Upload Gradle log
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-log
-          path: gradle.log
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
