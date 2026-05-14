@@ -32,15 +32,22 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug 2>&1
+          ./gradlew assembleDebug --info 2>&1 | tail -100
         continue-on-error: true
 
-      - name: Upload APK
+      - name: Debug APK output
+        run: |
+          echo "=== Checking outputs dir ==="
+          ls -laR app/build/outputs/
+          echo "=== Trying to find APK ==="
+          find app/build -name "*.apk" -type f || echo "NO APK FOUND"
+
+      - name: Upload all outputs
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: osu-injector.apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: all-outputs
+          path: app/build/outputs/
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
