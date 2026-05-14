@@ -45,10 +45,8 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           export ANDROID_HOME=${{ env.ANDROID_HOME }}
-          echo "Using SDK: $ANDROID_HOME"
-          ls -la $ANDROID_HOME
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace 2>&1
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
