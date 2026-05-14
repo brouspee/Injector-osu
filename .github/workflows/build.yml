@@ -19,18 +19,16 @@ jobs:
 
       - name: Install Android SDK
         run: |
-          cd $HOME
+          cd /opt
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
           unzip -q cmdline-tools.zip
           mkdir -p android-sdk/cmdline-tools
           mv cmdline-tools android-sdk/cmdline-tools/latest
-          export ANDROID_HOME=$HOME/android-sdk
-          echo "Created ANDROID_HOME: $ANDROID_HOME"
-          ls -la android-sdk/
+          export ANDROID_HOME=/opt/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1 || true
-          echo "sdk.dir=$ANDROID_HOME" > $GITHUB_WORKSPACE/local.properties
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+          echo "sdk.dir=/opt/android-sdk" > $GITHUB_WORKSPACE/local.properties
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -40,19 +38,10 @@ jobs:
       - name: Build DLL
         run: cd OsuInjectorMod && dotnet restore && dotnet build -c Release
 
-      - name: Build Android APK
+      - name: Build APK
         run: |
-          export ANDROID_HOME=$HOME/android-sdk
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "===== Building APK ====="
-          echo "PWD: $(pwd)"
-          echo "ANDROID_HOME: $ANDROID_HOME"
-          echo "local.properties: $(cat local.properties)"
-          ls -la app/ || echo "app directory doesn't exist"
-          ls -la gradlew
-          echo "===== Running gradle =====" 
-          ./gradlew clean assembleDebug --no-daemon --console=plain:plain
-          echo "===== Gradle done ====="
+          chmod +x gradlew
+          ./gradlew clean assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
