@@ -168,10 +168,17 @@
             android:layout_marginTop="24dp"/>
 
         <Button
+            android:id="@+id/btnInject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Inject DLL"
+            android:layout_marginTop="8dp"/>
+
+        <Button
             android:id="@+id/btnPatchDLL"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Build DLL"
+            android:text="Build New DLL"
             android:layout_marginTop="8dp"/>
 
         <TextView
