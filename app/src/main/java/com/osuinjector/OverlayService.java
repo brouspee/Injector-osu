@@ -10,11 +10,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Switch;
-import android.widget.TextView;
+import android.widget.Toast;
 
 public class OverlayService extends Service {
     
@@ -22,9 +20,7 @@ public class OverlayService extends Service {
     private View floatingView;
     private boolean isShown = false;
     
-    // Settings references  
-    private Switch switchTiming, switchRadius, switchAR, switchCS, switchOD;
-    private EditText editGreat, editOK, editMeh, editRadius, editAR, editCS, editOD;
+    private Switch switchTiming, switchRadius;
     
     @Override
     public IBinder onBind(Intent intent) {
@@ -52,11 +48,9 @@ public class OverlayService extends Service {
     }
     
     private void showOverlay() {
-        // Create floating window
         LayoutInflater inflater = LayoutInflater.from(this);
         floatingView = inflater.inflate(R.layout.overlay_menu, null);
         
-        // Window params
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -68,10 +62,8 @@ public class OverlayService extends Service {
         params.x = 0;
         params.y = 200;
         
-        // Setup views
         initOverlayViews();
         
-        // Touch listener for dragging
         floatingView.setOnTouchListener(new View.OnTouchListener() {
             private int initialX, initialY;
             private float initialTouchX, initialTouchY;
@@ -99,7 +91,7 @@ public class OverlayService extends Service {
             windowManager.addView(floatingView, params);
             isShown = true;
         } catch (Exception e) {
-            e.printStackTrace();
+            Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -108,29 +100,27 @@ public class OverlayService extends Service {
             try {
                 windowManager.removeView(floatingView);
             } catch (Exception e) {
-                e.printStackTrace();
+                // ignore
             }
             isShown = false;
         }
     }
     
     private void initOverlayViews() {
-        // Get views from overlay layout
         switchTiming = floatingView.findViewById(R.id.overlay_switchTiming);
         switchRadius = floatingView.findViewById(R.id.overlay_switchRadius);
         
-        // Close button
         Button btnClose = floatingView.findViewById(R.id.overlay_btnClose);
         btnClose.setOnClickListener(v -> {
             hideOverlay();
             stopSelf();
         });
         
-        // Save button
         Button btnSave = floatingView.findViewById(R.id.overlay_btnSave);
-        btnSave.setOnClickListener(v -> saveOverlaySettings());
+        btnSave.setOnClickListener(v -> {
+            saveOverlaySettings();
+        });
         
-        // Toggle visibility
         Button btnToggle = floatingView.findViewById(R.id.overlay_btnToggle);
         btnToggle.setOnClickListener(v -> {
             LinearLayout content = floatingView.findViewById(R.id.overlay_content);
@@ -140,11 +130,20 @@ public class OverlayService extends Service {
                 content.setVisibility(View.VISIBLE);
             }
         });
+        
+        // Load current settings
+        switchTiming.setChecked(getSharedPreferences("osu_injector_settings", MODE_PRIVATE)
+            .getBoolean("timing_enabled", true));
+        switchRadius.setChecked(getSharedPreferences("osu_injector_settings", MODE_PRIVATE)
+            .getBoolean("radius_enabled", true));
     }
     
     private void saveOverlaySettings() {
-        // Save to shared prefs - will be read by inject()
-        // Settings already saved in MainActivity
+        getSharedPreferences("osu_injector_settings", MODE_PRIVATE).edit()
+            .putBoolean("timing_enabled", switchTiming.isChecked())
+            .putBoolean("radius_enabled", switchRadius.isChecked())
+            .apply();
+        Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show();
     }
     
     @Override
