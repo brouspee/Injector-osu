@@ -24,6 +24,9 @@ jobs:
           api-levels: "34"
           build-tools: "34.0.0"
 
+      - name: Show SDK outputs
+        run: echo "SDK outputs: ${{ toJson(steps.android-setup.outputs) }}"
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -35,6 +38,7 @@ jobs:
       - name: Build Android APK
         run: |
           echo "sdk.dir=${{ steps.android-setup.outputs.sdk-root }}" > local.properties
+          echo "sdk.dir written"
           cat local.properties
           chmod +x gradlew && ./gradlew assembleDebug
 
