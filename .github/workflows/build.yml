@@ -30,20 +30,10 @@ jobs:
 
       - name: Build Android APK
         run: |
-          echo "=== ENV ==="
-          printenv | grep -i android || true
-          echo "=== DIR ==="
-          ls -la 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          cat local.properties
           chmod +x gradlew && ./gradlew assembleDebug
-        continue-on-error: true
-
-      - name: Check APK
-        run: ls -la app/build/outputs/apk/debug/*.apk || echo "NO APK"
 
       - name: Upload APK
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: osu-injector.apk
