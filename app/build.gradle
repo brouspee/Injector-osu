@@ -10,11 +10,26 @@ android {
         applicationId "com.osuinjector.app"
         minSdk 24
         targetSdk 34
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+            universalApk true
+        }
     }
 
     buildTypes {
         debug {
             debuggable true
+            ndk {
+                debuggableSymbols true
+            }
         }
         release {
             minifyEnabled false

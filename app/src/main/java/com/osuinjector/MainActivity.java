@@ -1,7 +1,9 @@
 package com.osuinjector;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -96,28 +98,23 @@ public class MainActivity extends AppCompatActivity {
     }
     
     private void inject() {
-        // Копируем DLL в /data/local/tmp если нужно
+        // Запускаем оверлей сервис
         try {
-            File dllFile = new File(DLL_ASSETS_PATH);
-            if (!dllFile.exists()) {
-                // Проверяем в assets
-                java.io.InputStream is = getAssets().open("OsuInjectorMod.dll");
-                java.io.FileOutputStream fos = new FileOutputStream(dllFile);
-                byte[] buffer = new byte[4096];
-                int len;
-                while ((len = is.read(buffer)) > 0) {
-                    fos.write(buffer, 0, len);
-                }
-                is.close();
-                fos.close();
+            // Проверяем разрешение на оверлей
+            if (!Settings.canDrawOverlays(this)) {
+                txtStatus.setText("Please grant overlay permission!");
+                Intent intent = new Intent(
+                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:" + getPackageName())
+                );
+                startActivity(intent);
+                return;
             }
             
-            // Проверяем root и инжектим
-            Process su = Runtime.getRuntime().exec("su");
-            su.waitFor();
-            
-            // TODO: Инжект через /data/local/tmp/bepinex/plugins/
-            txtStatus.setText("DLL ready. Install BepInEx/MelonLoader in osu!lazer first.");
+            // Запускаем foreground сервис
+            Intent serviceIntent = new Intent(this, OverlayService.class);
+            startForegroundService(serviceIntent);
+            txtStatus.setText("Overlay started!");
             
         } catch (Exception e) {
             txtStatus.setText("Error: " + e.getMessage());
