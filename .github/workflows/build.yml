@@ -50,28 +50,20 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Find APKs
+      - name: Find all APK files
         run: |
           echo "=== APK Files ==="
-          find app/build/outputs -name "*.apk" -type f
+          find . -name "*.apk" -type f 2>/dev/null | head -20
+          echo "=== outputs structure ==="
+          ls -la app/build/outputs/ 2>/dev/null || echo "not found"
+          ls -la app/build/outputs/apk/ 2>/dev/null || echo "not found"
+          ls -la app/build/outputs/apk/debug/ 2>/dev/null || echo "not found"
 
-      - name: Upload ARM64 APK
+      - name: Upload all APKs
         uses: actions/upload-artifact@v4
         with:
-          name: osu-injector-arm64-v8a.apk
-          path: app/build/outputs/apk/debug/arm64-v8a/app-debug.apk
-
-      - name: Upload ARMv7 APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: osu-injector-armeabi-v7a.apk
-          path: app/build/outputs/apk/debug/armeabi-v7a/app-debug.apk
-
-      - name: Upload Universal APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: osu-injector.apk
-          path: app/build/outputs/apk/debug/universal/app-debug.apk
+          name: apks
+          path: app/build/outputs/apk/debug/*.apk
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
