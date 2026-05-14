@@ -27,6 +27,7 @@ jobs:
       - name: Install SDK
         if: steps.cache-sdk.outputs.cache-hit != 'true'
         run: |
+          echo "Installing Android SDK..."
           mkdir -p /opt/android-sdk
           cd /opt
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
@@ -46,16 +47,26 @@ jobs:
 
       - name: Build APK
         run: |
-          echo "sdk.dir=/opt/android-sdk" > local.properties
+          if [ -f "local.properties" ]; then
+            cat local.properties
+          else
+            echo "sdk.dir=/opt/android-sdk" > local.properties
+          fi
+          echo "Contents of local.properties:"
+          cat local.properties
+          echo "Contents of /opt/android-sdk:"
+          ls -la /opt/android-sdk
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-        
-      - name: List APK
-        run: |
-          ls -la app/build/outputs/apk/debug/
-          find . -name "*.apk"
+          ./gradlew assembleDebug 2>&1 | tee build_output.log
+          echo "===Build output (last 50 lines)==="
+          tail -50 build_output.log
 
       - name: Upload APK
+        run: |
+          echo "Uploading APK..."
+          ls -la app/build/outputs/apk/debug/ || echo "Directory not found"
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: osu-injector.apk
