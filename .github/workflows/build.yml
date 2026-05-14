@@ -43,10 +43,17 @@ jobs:
       
       - name: Build Debug APK
         run: |
+          echo "=== ENV ==="
+          env | grep -i android || true
+          echo "=== ANDROID_HOME ==="
+          echo $ANDROID_HOME
+          echo "=== Writing local.properties ==="
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          export ANDROID_HOME=${{ env.ANDROID_HOME }}
+          cat local.properties
+          ls -la
+          echo "=== Running gradle ==="
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace 2>&1
+          ./gradlew assembleDebug --stacktrace 2>&1 | tail -50
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
