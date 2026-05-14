@@ -33,7 +33,9 @@ jobs:
 
       - name: Build Android APK
         run: |
+          echo "ANDROID_HOME is: $ANDROID_HOME"
           echo "sdk.dir=$ANDROID_HOME" > local.properties
+          cat local.properties
           chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
