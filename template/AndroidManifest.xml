@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest version="1" package="com.osuhooker">
-    <! -- osu!lazer LSPosed Module -- >
-    <! Uses LSPosed (LShook) to hook osu!lazer at runtime -- >
+    <!-- osu!lazer LSPosed Module -->
     
     <application>
         <meta-data
@@ -9,6 +8,9 @@
             value="true" />
     </application>
     
-    <! osu!lazer package -- >
+    <!-- osu!lazer package -->
     <uses-package name="com.ppy.osulazer" />
+    
+    <!-- Required for Xposed -->
+    <uses-library name="com.android.category.LSPOSED" required="true"/>
 </manifest>
