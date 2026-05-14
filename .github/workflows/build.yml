@@ -43,10 +43,10 @@ jobs:
           export ANDROID_HOME=$HOME/android-sdk
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug
+          chmod +x gradle/wrapper/gradle-wrapper.jar
+          ./gradlew clean assembleDebug --no-daemon
 
       - name: Upload APK
-        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: osu-injector.apk
