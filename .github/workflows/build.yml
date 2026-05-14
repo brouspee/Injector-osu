@@ -23,6 +23,18 @@ jobs:
           api-levels: "34"
           build-tools: "34.0.0"
       
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Build DLL
+        run: |
+          cd OsuInjectorMod
+          dotnet restore
+          dotnet build -c Release
+        working-directory: ${{ github.workspace }}
+      
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
@@ -34,6 +46,12 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: OsuInjectorMod.dll
+          path: OsuInjectorMod/bin/Release/net8.0/OsuInjectorMod.dll
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
