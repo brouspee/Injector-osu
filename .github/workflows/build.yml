@@ -47,30 +47,29 @@ jobs:
 
       - name: Build APK
         run: |
-          if [ -f "local.properties" ]; then
-            cat local.properties
-          else
-            echo "sdk.dir=/opt/android-sdk" > local.properties
-          fi
-          echo "Contents of local.properties:"
-          cat local.properties
-          echo "Contents of /opt/android-sdk:"
-          ls -la /opt/android-sdk
+          echo "sdk.dir=/opt/android-sdk" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug 2>&1 | tee build_output.log
-          echo "===Build output (last 50 lines)==="
-          tail -50 build_output.log
+          ./gradlew assembleDebug 2>&1
 
-      - name: Upload APK
+      - name: Debug APK files
         run: |
-          echo "Uploading APK..."
-          ls -la app/build/outputs/apk/debug/ || echo "Directory not found"
+          echo "==== app/build structure ===="
+          find app/build -type f 2>/dev/null || echo "no app/build dir"
+          echo "==== outputs dir ===="
+          find . -type d -name outputs 2>/dev/null || echo "no outputs dir"
+          ls -la app/build/outputs/ 2>/dev/null || echo "app/build/outputs/ not found"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: osu-injector.apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Debug log
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-info
+          path: app/build/
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
