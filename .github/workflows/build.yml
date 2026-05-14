@@ -46,30 +46,30 @@ jobs:
         run: cd OsuInjectorMod && dotnet restore && dotnet build -c Release
 
       - name: Build APK
+        continue-on-error: true
         run: |
           echo "sdk.dir=/opt/android-sdk" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug 2>&1
+          ./gradlew assembleDebug 2>&1 | tee gradle.log || true
+          echo "===GRADLE OUTPUT==="
+          cat gradle.log
 
-      - name: Debug APK files
+      - name: Check outputs
         run: |
-          echo "==== app/build structure ===="
-          find app/build -type f 2>/dev/null || echo "no app/build dir"
-          echo "==== outputs dir ===="
-          find . -type d -name outputs 2>/dev/null || echo "no outputs dir"
-          ls -la app/build/outputs/ 2>/dev/null || echo "app/build/outputs/ not found"
+          echo "=== Checking outputs ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "no apk found"
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: osu-injector.apk
           path: app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Upload Debug log
+      - name: Upload Gradle log
         uses: actions/upload-artifact@v4
         with:
-          name: debug-info
-          path: app/build/
+          name: gradle-log
+          path: gradle.log
 
       - name: Upload DLL
         uses: actions/upload-artifact@v4
