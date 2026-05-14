@@ -1,0 +1,72 @@
+{
+  "format": 1,
+  "restore": {
+    "/workspace/osu-injector/OsuInjectorMod/OsuInjectorMod.csproj": {}
+  },
+  "projects": {
+    "/workspace/osu-injector/OsuInjectorMod/OsuInjectorMod.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspace/osu-injector/OsuInjectorMod/OsuInjectorMod.csproj",
+        "projectName": "OsuInjectorMod",
+        "projectPath": "/workspace/osu-injector/OsuInjectorMod/OsuInjectorMod.csproj",
+        "packagesPath": "/home/openhands/.nuget/packages/",
+        "outputPath": "/workspace/osu-injector/OsuInjectorMod/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/openhands/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Lib.Harmony": {
+              "target": "Package",
+              "version": "[2.2.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/tmp/dotnet/sdk/8.0.421/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

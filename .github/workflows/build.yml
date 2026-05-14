@@ -31,20 +31,10 @@ jobs:
       
       - name: Build Debug APK
         run: |
-          echo "=== ENVIRONMENT ==="
-          env | grep ANDROID
-          echo "=== WORKDIR ==="
-          pwd
-          ls -la
-          echo "=== LOCAL.PROPERTIES ==="
-          cat local.properties
-          echo "=== RUNNING GRADLE ==="
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --debug 2>&1 | tail -100
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
-      
+          ./gradlew assembleDebug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
