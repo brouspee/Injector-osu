@@ -19,13 +19,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
-        id: android-setup
-        with:
-          api-levels: "34"
-          build-tools: "34.0.0"
-
-      - name: Show SDK outputs
-        run: echo "SDK outputs: ${{ toJson(steps.android-setup.outputs) }}"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -37,9 +30,7 @@ jobs:
 
       - name: Build Android APK
         run: |
-          echo "sdk.dir=${{ steps.android-setup.outputs.sdk-root }}" > local.properties
-          echo "sdk.dir written"
-          cat local.properties
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
