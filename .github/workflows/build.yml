@@ -10,19 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
+        id: android-setup
         with:
           api-levels: "34"
           build-tools: "34.0.0"
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -33,8 +34,7 @@ jobs:
 
       - name: Build Android APK
         run: |
-          echo "ANDROID_HOME is: $ANDROID_HOME"
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "sdk.dir=${{ steps.android-setup.outputs.sdk-root }}" > local.properties
           cat local.properties
           chmod +x gradlew && ./gradlew assembleDebug
 
