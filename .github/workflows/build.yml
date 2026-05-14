@@ -19,16 +19,20 @@ jobs:
 
       - name: Install Android SDK
         run: |
+          echo "Installing Android SDK..."
           cd $HOME
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip || echo "WGET FAILED"
+          ls -la cmdline-tools.zip
           unzip -q cmdline-tools.zip
           mkdir -p android-sdk/cmdline-tools
           mv cmdline-tools android-sdk/cmdline-tools/latest
           export ANDROID_HOME=$HOME/android-sdk
           export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          yes | sdkmanager --licenses > /dev/null 2>&1 || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
+          yes | sdkmanager --licenses 2>&1 | head -5
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -10
           echo "sdk.dir=$ANDROID_HOME" > $GITHUB_WORKSPACE/local.properties
+          echo "SDK installed at: $ANDROID_HOME"
+          ls -la $ANDROID_HOME
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -41,9 +45,11 @@ jobs:
       - name: Build Android APK
         run: |
           export ANDROID_HOME=$HOME/android-sdk
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          cat local.properties
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          ls -la $ANDROID_HOME
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug 2>&1 | tail -30
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
