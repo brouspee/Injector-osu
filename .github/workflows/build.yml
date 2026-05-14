@@ -23,13 +23,18 @@ jobs:
           api-levels: "34"
           build-tools: "34.0.0"
       
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "Properties created"
+          cat local.properties
+      
       - name: Build Debug APK
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"  
-          ls -la $ANDROID_HOME 2>&1 || echo "SDK not found"
+          cat local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace --info
+          ./gradlew assembleDebug --stacktrace
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
