@@ -31,10 +31,16 @@ jobs:
       
       - name: Build Debug APK
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "=== ENVIRONMENT ==="
+          env | grep ANDROID
+          echo "=== WORKDIR ==="
+          pwd
+          ls -la
+          echo "=== LOCAL.PROPERTIES ==="
           cat local.properties
+          echo "=== RUNNING GRADLE ==="
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug --stacktrace --debug 2>&1 | tail -100
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
