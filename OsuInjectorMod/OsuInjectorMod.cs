@@ -1,82 +1,96 @@
-// osu!lazer mod DLL - Harmony patches
-using System;
+// osu!lazer Android Mod via MelonLoader
+// Place in osu!/UserData/MelonMods/
+
 using HarmonyLib;
-using System.Reflection;
+using osu.Game.Rulesets.Osu.Scoring;
+using osu.Game.Rulesets.Scoring;
+using System;
+using System.IO;
+
+// Assembly attribute for MelonLoader discovery
+[assembly: MelonLoader.MelonPlugin(typeof(OsuInjectorMod.Main))]
 
 namespace OsuInjectorMod
 {
-    /// <summary>
-    /// Главный класс - инициализирует Harmony при загрузке
-    /// </summary>
-    public class Loader
+    public class Main : MelonLoader.MelonPlugin
     {
-        private static Harmony? _harmony;
-        public static bool IsLoaded { get; private set; }
-
-        public static void Awake()
+        private static HarmonyLib.Harmony harmony;
+        
+        public override void OnInitialize()
+        {
+            Logger.LogMsg("=== osu! Injector Mod v1.0 ===");
+            
+            harmony = new HarmonyLib.Harmony("com.osuinjector.mod");
+            
+            // Patch SetDifficulty - основная точка
+            var setDiff = typeof(OsuHitWindows).GetMethod("SetDifficulty");
+            if (setDiff != null)
+            {
+                harmony.Patch(setDiff, prefix: nameof(OnSetDifficulty));
+                Logger.LogMsg("Patched SetDifficulty");
+            }
+            
+            var windowFor = typeof(OsuHitWindows).GetMethod("WindowFor");
+            if (windowFor != null)
+            {
+                harmony.Patch(windowFor, prefix: nameof(OnWindowFor));
+                Logger.LogMsg("Patched WindowFor");
+            }
+            
+            Logger.LogMsg("Mod ready!");
+        }
+        
+        public static int GreatMs = 50;
+        public static int OkMs = 100;
+        public static int MehMs = 150;
+        public static bool Enabled = true;
+        
+        private static double g, o, m;
+        
+        private static void OnSetDifficulty(OsuHitWindows __instance, double difficulty)
+        {
+            if (!Enabled) return;
+            g = GreatMs; o = OkMs; m = MehMs;
+            Logger.LogMsg($"SetDifficulty: G={g}, O={o}, M={m}");
+        }
+        
+        private static void OnWindowFor(OsuHitWindows __instance, HitResult result, ref double __result)
+        {
+            if (!Enabled) return;
+            switch (result)
+            {
+                case HitResult.Great: if (g > 0) __result = g; break;
+                case HitResult.Ok: if (o > 0) __result = o; break;
+                case HitResult.Meh: if (m > 0) __result = m; break;
+            }
+        }
+        
+        // Load config from file
+        public static void LoadConfig(string path)
         {
             try
             {
-                _harmony = new Harmony("com.osuinjector.mod");
-                
-                // Ищем типы через reflection
-                var hitWindowsType = AccessTools.TypeByName("osu.Game.Rulesets.Osu.Scoring.OsuHitWindows");
-                var hitObjectType = AccessTools.TypeByName("osu.Game.Rulesets.Osu.Objects.OsuHitObject");
-                
-                if (hitWindowsType != null)
+                if (File.Exists(path))
                 {
-                    var windowFor = AccessTools.Method(hitWindowsType, "WindowFor");
-                    var patch = new HarmonyMethod(typeof(Patch_WindowFor).GetMethod("Postfix"));
-                    _harmony.Patch(windowFor, null, patch);
-                    Console.WriteLine("[OsuInjectorMod] Patched WindowFor");
-                }
-                
-                if (hitObjectType != null)
-                {
-                    var radius = AccessTools.Property(hitObjectType, "Radius")?.GetGetMethod();
-                    if (radius != null)
+                    foreach (var line in File.ReadAllLines(path))
                     {
-                        var patch = new HarmonyMethod(typeof(Patch_Radius).GetMethod("Postfix"));
-                        _harmony.Patch(radius, null, patch);
-                        Console.WriteLine("[OsuInjectorMod] Patched Radius");
+                        var p = line.Split('=');
+                        if (p.Length == 2)
+                        {
+                            if (p[0].Trim() == "Great") GreatMs = int.Parse(p[1].Trim());
+                            else if (p[0].Trim() == "Ok") OkMs = int.Parse(p[1].Trim());
+                            else if (p[0].Trim() == "Meh") MehMs = int.Parse(p[1].Trim());
+                            else if (p[0].Trim() == "Enabled") Enabled = bool.Parse(p[1].Trim());
+                        }
                     }
                 }
-                
-                IsLoaded = true;
-                Console.WriteLine("[OsuInjectorMod] Loaded! Timing: Great=500 OK=800 Meh=1200 | Hitbox=x3");
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OsuInjectorMod] Error: {ex.Message}");
-            }
+            catch { }
         }
     }
-
-    /// <summary>
-    /// Патчит WindowFor - легкие тайминги
-    /// </summary>
-    [HarmonyPatch]
-    public class Patch_WindowFor
+    
+    public static class Logger
     {
-        static void Postfix(ref double __result)
-        {
-            // Ставим легкие окна
-            if (__result <= 400) __result = 500;
-            else if (__result <= 800) __result = 800;
-            else if (__result <= 1200) __result = 1200;
-            else __result = 2000;
-        }
-    }
-
-    /// <summary>
-    /// Патчит Radius - x3
-    /// </summary>
-    [HarmonyPatch]
-    public class Patch_Radius
-    {
-        static void Postfix(ref double __result)
-        {
-            __result = __result * 3.0;
-        }
+        public static void LogMsg(string msg) => Console.WriteLine("[OsuInjector] " + msg);
     }
 }

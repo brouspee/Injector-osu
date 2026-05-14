@@ -3,12 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.3.0" />
-    <PackageReference Include="BepInEx.Base" Version="5.4.21" />
+    <PackageReference Include="Lib.Harmony" Version="2.3.2" />
   </ItemGroup>
+
+  <!-- MelonLoader не требует внешних зависимостей - просто IL2CPP -->
+  <!-- DLL должна быть в osu!/UserData/MelonMods/ -->
 
 </Project>
