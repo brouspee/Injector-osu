@@ -1,163 +1,121 @@
-// osu!lazer Android Hooker - для Android (MelonLoader/Frida)
-// ======================================
-// Основано на ppy/osu: osu.Game.Rulesets.Osu.Scoring.OsuHitWindows
-// Работает БЕЗ изменения кода osu!lazer
-// ======================================
-// Использование:
-//   MelonLoader: скомпилируй в .dll -> osu!/UserData/Mods/
-//   Frida: frida -U -f com.ppy.osulazer -l hooker-android.js
-// ======================================
+// osu!lazer Android Hooker - ПРОСТОЙ .DLL
+// ===============================
+// Скомпилируй -> положи в osu!/UserData/Mods/
+// ===============================
+// Работает БЕЗ Frida! Просто MelonLoader плагин
 
 using System;
-using System.Reflection;
 using HarmonyLib;
 
-// osu.Game.Rulesets.Osu.Scoring - из ppy/osu
-using OsuHitWindows = osu.Game.Rulesets.Osu.Scoring.OsuHitWindows;
-// osu.Game.Rulesets.Osu.Objects - из ppy/osu  
-using OsuHitObject = osu.Game.Rulesets.Osu.Objects.OsuHitObject;
-// osu.Game.Rulesets.Scoring - из ppy/osu-framework
-using HitResult = osu.Game.Rulesets.Scoring.HitResult;
-
-namespace OsuHookerAndroid
+namespace OsuHooker
 {
     /// <summary>
-    /// osu!lazer Android hooker - ультра легкие тайминги и большие круги
-    /// Основано на ppy/osu OsuHitWindows и OsuHitObject
-    /// Работает с MelonLoader на Android без изменения APK
+    /// Простой хукер - простоDLLка без Frida
     /// </summary>
-    public class OsuHookerAndroid
+    public class OsuHooker
     {
-        // Конфигурация по умолчанию (легкие тайминги)
-        public static int GreatMs = 50;
-        public static int OkMs = 100;
-        public static int MehMs = 150;
-        public static float RadiusMultiplier = 3.0f;
-        public static bool Enabled = true;
+        public static MelonLoader.PluginArchitecture Plugin => typeof(OsuHooker).Assembly;
         
         public static void OnInitialize()
         {
             try
             {
-                var harmony = new Harmony("com.osuhooker.android");
+                var harmony = new Harmony("com.osuhooker");
                 
-                // Патчим OsuHitWindows.SetDifficulty() из osu.Game.Rulesets.Osu.Scoring
+                // OsuHitWindows.SetDifficulty
                 harmony.Patch(
-                    typeof(OsuHitWindows).GetMethod("SetDifficulty", 
-                        BindingFlags.Public | BindingFlags.Instance),
-                    prefix: typeof(Patch_SetDifficulty).GetMethod("Prefix")
+                    typeof(osu.Game.Rulesets.Osu.Scoring.OsuHitWindows)
+                        .GetMethod("SetDifficulty", 
+                            System.Reflection.BindingFlags.Public | 
+                            System.Reflection.BindingFlags.Instance),
+                    prefix: typeof(HitWindows_Patch).GetMethod("Prefix")
                 );
                 
-                // Патчим OsuHitWindows.WindowFor(HitResult) из osu.Game.Rulesets.Osu.Scoring
+                // OsuHitWindows.WindowFor
                 harmony.Patch(
-                    typeof(OsuHitWindows).GetMethod("WindowFor",
-                        BindingFlags.Public | BindingFlags.Instance),
-                    prefix: typeof(Patch_WindowFor).GetMethod("Prefix")
+                    typeof(osu.Game.Rulesets.Osu.Scoring.OsuHitWindows)
+                        .GetMethod("WindowFor",
+                            System.Reflection.BindingFlags.Public | 
+                            System.Reflection.BindingFlags.Instance),
+                    prefix: typeof(WindowFor_Patch).GetMethod("Prefix")
                 );
                 
-                // Патчим OsuHitObject.Scale из osu.Game.Rulesets.Osu.Objects
-                var scaleProp = typeof(OsuHitObject).GetProperty("Scale");
+                // OsuHitObject.Scale
+                var scaleProp = typeof(osu.Game.Rulesets.Osu.Objects.OsuHitObject)
+                    .GetProperty("Scale");
                 if (scaleProp != null)
                 {
                     harmony.Patch(
                         scaleProp.GetGetMethod(),
-                        prefix: typeof(Patch_Scale).GetMethod("Prefix")
+                        prefix: typeof(Scale_Patch).GetMethod("Prefix")
                     );
                 }
                 
-                Console.WriteLine($"[OsuHookerAndroid] v2.0.0 loaded!");
-                Console.WriteLine($"[OsuHookerAndroid] Timing: G={GreatMs}, O={OkMs}, M={MehMs}");
-                Console.WriteLine($"[OsuHookerAndroid] Radius: x{RadiusMultiplier}");
+                Console.WriteLine("[OsuHooker] Loaded! G=50 O=100 M=150 R=3x");
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Console.WriteLine($"[OsuHookerAndroid] Error: {ex.Message}");
+                Console.WriteLine("[OsuHooker] Error: " + e.Message);
             }
         }
-        
-        // API для изменения настроек во время игры
-        public static void SetTiming(int great, int ok, int meh)
-        {
-            GreatMs = great;
-            OkMs = ok;
-            MehMs = meh;
-            Console.WriteLine($"[OsuHookerAndroid] Timing: G={great}, O={ok}, M={meh}");
-        }
-        
-        public static void SetRadius(float mult)
-        {
-            RadiusMultiplier = mult;
-            Console.WriteLine($"[OsuHookerAndroid] Radius: x{mult}");
-        }
-        
-        public static void Enable() => Enabled = true;
-        public static void Disable() => Enabled = false;
     }
     
-    /// <summary>
-    /// Патчим SetDifficulty - игнорируем сложность и ставим свои значения
-    /// Основано на ppy/osu OsuHitWindows.SetDifficulty
-    /// </summary>
+    // Тайминги: Great=50, Ok=100, Meh=150
     [HarmonyPatch]
-    public class Patch_SetDifficulty
+    public class HitWindows_Patch
     {
-        static void Prefix(OsuHitWindows __instance)
+        static void Prefix(osu.Game.Rulesets.Osu.Scoring.OsuHitWindows __instance)
         {
-            if (!OsuHookerAndroid.Enabled) return;
-            
-            // Устанавливаем напрямую в private fields
-            var type = __instance.GetType();
-            type.GetField("great", BindingFlags.NonPublic | BindingFlags.Instance)?
-                .SetValue(__instance, (double)OsuHookerAndroid.GreatMs);
-            type.GetField("ok", BindingFlags.NonPublic | BindingFlags.Instance)?
-                .SetValue(__instance, (double)OsuHookerAndroid.OkMs);
-            type.GetField("meh", BindingFlags.NonPublic | BindingFlags.Instance)?
-                .SetValue(__instance, (double)OsuHookerAndroid.MehMs);
+            var t = __instance.GetType();
+            t.GetField("great", 
+                System.Reflection.BindingFlags.NonPublic | 
+                System.Reflection.BindingFlags.Instance)?
+                .SetValue(__instance, 50.0);
+            t.GetField("ok", 
+                System.Reflection.BindingFlags.NonPublic | 
+                System.Reflection.BindingFlags.Instance)?
+                .SetValue(__instance, 100.0);
+            t.GetField("meh", 
+                System.Reflection.BindingFlags.NonPublic | 
+                System.Reflection.BindingFlags.Instance)?
+                .SetValue(__instance, 150.0);
         }
     }
     
-    /// <summary>
-    /// Патчим WindowFor - возвращаем свои значения
-    /// Основано на ppy/osu OsuHitWindows.WindowFor
-    /// </summary>
     [HarmonyPatch]
-    public class Patch_WindowFor
+    public class WindowFor_Patch
     {
-        static bool Prefix(OsuHitWindows __instance, HitResult result, ref double __result)
+        static bool Prefix(osu.Game.Rulesets.Osu.Scoring.OsuHitWindows __instance, 
+            osu.Game.Rulesets.Scoring.HitResult result, 
+            ref double __result)
         {
-            if (!OsuHookerAndroid.Enabled) return true;
-            
             switch (result)
             {
-                case HitResult.Great:
-                    __result = OsuHookerAndroid.GreatMs;
+                case osu.Game.Rulesets.Scoring.HitResult.Great:
+                    __result = 50;
                     return false;
-                case HitResult.Ok:
-                    __result = OsuHookerAndroid.OkMs;
+                case osu.Game.Rulesets.Scoring.HitResult.Ok:
+                    __result = 100;
                     return false;
-                case HitResult.Meh:
-                    __result = OsuHookerAndroid.MehMs;
+                case osu.Game.Rulesets.Scoring.HitResult.Meh:
+                    __result = 150;
                     return false;
-                case HitResult.Miss:
-                    __result = 400; // MISS_WINDOW константа из ppy/osu
+                case osu.Game.Rulesets.Scoring.HitResult.Miss:
+                    __result = 400;
                     return false;
             }
             return true;
         }
     }
     
-    /// <summary>
-    /// Патчим Scale - увеличиваем размер кругов
-    /// Основано на ppy/osu OsuHitObject.Scale
-    /// </summary>
+    // Радиус x3
     [HarmonyPatch]
-    public class Patch_Scale
+    public class Scale_Patch
     {
-        static bool Prefix(OsuHitObject __instance, ref float __result)
+        static bool Prefix(osu.Game.Rulesets.Osu.Objects.OsuHitObject __instance, 
+            ref float __result)
         {
-            if (!OsuHookerAndroid.Enabled) return true;
-            
-            __result = __result * OsuHookerAndroid.RadiusMultiplier;
+            __result = __result * 3.0f;
             return false;
         }
     }
