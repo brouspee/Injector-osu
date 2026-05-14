@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest version="1" package="com.osuhooker">
+    <! -- osu!lazer LSPosed Module -- >
+    <! Uses LSPosed (LShook) to hook osu!lazer at runtime -- >
+    
+    <application>
+        <meta-data
+            name="org.lsposed.manager"
+            value="true" />
+    </application>
+    
+    <! osu!lazer package -- >
+    <uses-package name="com.ppy.osulazer" />
+</manifest>
