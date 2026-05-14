@@ -17,18 +17,23 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: /opt/android-sdk
+          key: android-sdk-34-r1
+
       - name: Install Android SDK
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
+          mkdir -p /opt/android-sdk
           cd /opt
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
           unzip -q cmdline-tools.zip
           mkdir -p android-sdk/cmdline-tools
           mv cmdline-tools android-sdk/cmdline-tools/latest
-          export ANDROID_HOME=/opt/android-sdk
-          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
-          yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
-          echo "sdk.dir=/opt/android-sdk" > $GITHUB_WORKSPACE/local.properties
+          yes | /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          /opt/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -40,6 +45,7 @@ jobs:
 
       - name: Build APK
         run: |
+          echo "sdk.dir=/opt/android-sdk" > local.properties
           chmod +x gradlew
           ./gradlew clean assembleDebug
 
