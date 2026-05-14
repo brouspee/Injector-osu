@@ -4,12 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyName>OsuInjectorMod</AssemblyName>
-    <PlatformTarget>ARM64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lib.Harmony" Version="2.2.2" />
+    <PackageReference Include="Lib.Harmony" Version="2.3.0" />
+    <PackageReference Include="BepInEx.Base" Version="5.4.21" />
   </ItemGroup>
 
 </Project>
