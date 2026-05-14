@@ -1,45 +1,19 @@
-// osu!lazer Android Mod via MelonLoader
+// osu!lazer Android Mod - Pure Harmony
 // Place in osu!/UserData/MelonMods/
 
 using HarmonyLib;
 using osu.Game.Rulesets.Osu.Scoring;
 using osu.Game.Rulesets.Scoring;
 using System;
-using System.IO;
-
-// Assembly attribute for MelonLoader discovery
-[assembly: MelonLoader.MelonPlugin(typeof(OsuInjectorMod.Main))]
 
 namespace OsuInjectorMod
 {
-    public class Main : MelonLoader.MelonPlugin
+    [HarmonyPatch]
+    public static class OsuHitWindowsPatch
     {
         private static HarmonyLib.Harmony harmony;
         
-        public override void OnInitialize()
-        {
-            Logger.LogMsg("=== osu! Injector Mod v1.0 ===");
-            
-            harmony = new HarmonyLib.Harmony("com.osuinjector.mod");
-            
-            // Patch SetDifficulty - основная точка
-            var setDiff = typeof(OsuHitWindows).GetMethod("SetDifficulty");
-            if (setDiff != null)
-            {
-                harmony.Patch(setDiff, prefix: nameof(OnSetDifficulty));
-                Logger.LogMsg("Patched SetDifficulty");
-            }
-            
-            var windowFor = typeof(OsuHitWindows).GetMethod("WindowFor");
-            if (windowFor != null)
-            {
-                harmony.Patch(windowFor, prefix: nameof(OnWindowFor));
-                Logger.LogMsg("Patched WindowFor");
-            }
-            
-            Logger.LogMsg("Mod ready!");
-        }
-        
+        // Конфиг
         public static int GreatMs = 50;
         public static int OkMs = 100;
         public static int MehMs = 150;
@@ -47,14 +21,34 @@ namespace OsuInjectorMod
         
         private static double g, o, m;
         
-        private static void OnSetDifficulty(OsuHitWindows __instance, double difficulty)
+        public static HarmonyLib.Harmony GetHarmony()
+        {
+            if (harmony == null)
+            {
+                harmony = new HarmonyLib.Harmony("com.osuinjector.mod");
+                
+                var setDiff = typeof(OsuHitWindows).GetMethod("SetDifficulty");
+                if (setDiff != null)
+                {
+                    harmony.Patch(setDiff, prefix: nameof(SetDifficultyPrefix));
+                }
+                
+                var winFor = typeof(OsuHitWindows).GetMethod("WindowFor");
+                if (winFor != null)
+                {
+                    harmony.Patch(winFor, prefix: nameof(WindowForPrefix));
+                }
+            }
+            return harmony;
+        }
+        
+        private static void SetDifficultyPrefix(OsuHitWindows __instance, double difficulty)
         {
             if (!Enabled) return;
             g = GreatMs; o = OkMs; m = MehMs;
-            Logger.LogMsg($"SetDifficulty: G={g}, O={o}, M={m}");
         }
         
-        private static void OnWindowFor(OsuHitWindows __instance, HitResult result, ref double __result)
+        private static void WindowForPrefix(OsuHitWindows __instance, HitResult result, ref double __result)
         {
             if (!Enabled) return;
             switch (result)
@@ -65,32 +59,9 @@ namespace OsuInjectorMod
             }
         }
         
-        // Load config from file
-        public static void LoadConfig(string path)
+        public static void SetValues(int great, int ok, int meh, bool enabled)
         {
-            try
-            {
-                if (File.Exists(path))
-                {
-                    foreach (var line in File.ReadAllLines(path))
-                    {
-                        var p = line.Split('=');
-                        if (p.Length == 2)
-                        {
-                            if (p[0].Trim() == "Great") GreatMs = int.Parse(p[1].Trim());
-                            else if (p[0].Trim() == "Ok") OkMs = int.Parse(p[1].Trim());
-                            else if (p[0].Trim() == "Meh") MehMs = int.Parse(p[1].Trim());
-                            else if (p[0].Trim() == "Enabled") Enabled = bool.Parse(p[1].Trim());
-                        }
-                    }
-                }
-            }
-            catch { }
+            GreatMs = great; OkMs = ok; MehMs = meh; Enabled = enabled;
         }
-    }
-    
-    public static class Logger
-    {
-        public static void LogMsg(string msg) => Console.WriteLine("[OsuInjector] " + msg);
     }
 }
