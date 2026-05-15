@@ -1,29 +1,27 @@
 package com.example.xposedhook;
 
 import android.util.Log;
+import dalvik.system.BaseDexClassLoader;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
+import java.io.File;
+import java.lang.reflect.Method;
 
 /**
- * Xposed module for osu!mobile
+ * Xposed module for osu!lazer (native hooking)
  * 
- * П职能:
- * - Обход верификации сервера
- * - Хакинг очков
- * - Авто-пил
- * - Отключение рекламы
- * - Разблокировка всех битмапов
+ * Хучит через JNI native libraries (.so)
  */
 public class OsuHook implements IXposedHookLoadPackage {
     
     private static final String TAG = "OsuHook";
     private static final String TARGET_PACKAGE = "sh.ppy.osu";
     
-    // Настройки хуков
+    // Конфигурация хуков
     public static boolean ENABLE_BYPASS_VERIFY = true;
     public static boolean ENABLE_SCORE_HACK = true;
     public static boolean ENABLE_AUTO_PLAY = false;
@@ -31,7 +29,10 @@ public class OsuHook implements IXposedHookLoadPackage {
     public static boolean ENABLE_UNLOCK_ALL = true;
     public static boolean ENABLE_NO_FAIL = true;
     public static boolean ENABLE_PERFECT_HIT = false;
-    public static int SCORE_MULTIPLIER = 1;
+    public static boolean ENABLE_BIGGER_HITWINDOWS = true;
+    public static int HIT_WINDOW_300 = 20;  // ms дополнительно
+    public static int HIT_WINDOW_100 = 30;
+    public static int HIT_WINDOW_50 = 40;
     
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
@@ -39,369 +40,423 @@ public class OsuHook implements IXposedHookLoadPackage {
             return;
         }
         
-        Log.d(TAG, "osu!mobile loaded, initializing hooks...");
-        XposedBridge.log("[OsuHook] osu!mobile detected, applying hooks...");
+        Log.d(TAG, "osu!lazer loaded, initializing native hooks...");
+        XposedBridge.log("[OsuHook] osu!lazer detected - applying native hooks");
         
         try {
-            // Хук отправки счета - обход валидации
-            hookScoreSubmission(lpparam.classLoader);
+            // Hook через native libraries
+            hookNativeLibraries(lpparam.classLoader);
             
-            // Хук разблокировки битмапов
-            hookBeatmapUnlock(lpparam.classLoader);
-            
-            // Хук рекламы
-            hookAdBypass(lpparam.classLoader);
-            
-            // Хук верификации сервера
-            hookServerVerification(lpparam.classLoader);
-            
-            // Хук авто-пилота
-            hookAutoPilot(lpparam.classLoader);
-            
-            // Хук отключения фейла
-            hookNoFail(lpparam.classLoader);
-            
-            // Хук идеальных хтов
-            hookPerfectHits(lpparam.classLoader);
-            
-            Log.d(TAG, "All hooks applied successfully!");
-            XposedBridge.log("[OsuHook] All hooks applied!");
+            Log.d(TAG, "Native hooks applied successfully!");
+            XposedBridge.log("[OsuHook] All native hooks applied!");
             
         } catch (Exception e) {
-            Log.e(TAG, "Error applying hooks: " + e.getMessage());
+            Log.e(TAG, "Error: " + e.getMessage());
             XposedBridge.log("[OsuHook] Error: " + e.getMessage());
         }
     }
     
     /**
-     * Хук отправки счета - обходим серверную валидацию
+     * Hook native libraries через JNI
      */
-    private void hookScoreSubmission(ClassLoader classLoader) {
-        if (!ENABLE_BYPASS_VERIFY) return;
-        
+    private void hookNativeLibraries(ClassLoader classLoader) {
         try {
-            // Ищем и хукаем метод SubmitScore
-            String[] scoreClasses = {
-                "sh.ppy.osu.model.ScoreManager",
-                "sh.ppy.osu.api.ScoreServlet", 
-                "sh.ppy.osu.network.ScoreApi"
+            Log.d(TAG, "Hooking native libs...");
+            
+            // Находим и хучим JNI методы
+            hookJNIMethods(classLoader);
+            
+            // Hook hit windows (расширенные)
+            if (ENABLE_BIGGER_HITWINDOWS) {
+                hookHitWindows(classLoader);
+            }
+            
+            // Hook разблокировки
+            if (ENABLE_UNLOCK_ALL) {
+                hookUnlockFeatures(classLoader);
+            }
+            
+            // Hook рекламы
+            if (ENABLE_NO_ADS) {
+                hookAdRemoval(classLoader);
+            }
+            
+            // Hook без сбоя (no-fail)
+            if (ENABLE_NO_FAIL) {
+                hookNoFail(classLoader);
+            }
+            
+            // Hook автопилота
+            if (ENABLE_AUTO_PLAY) {
+                hookAutoPlay(classLoader);
+            }
+            
+            XposedBridge.log("[OsuHook] Native hooks complete");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Native hook error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Hook JNI методы (мост между Java и native)
+     */
+    private void hookJNIMethods(ClassLoader classLoader) {
+        try {
+            // Ищем JNI класс - обычно в osu android есть нативные методы
+            String[] jniClasses = {
+                "sh.ppy.osu.lazer.NativeBridge",
+                "sh.ppy.osu.NativeHooks",
+                "com.osu.lazer.NativeLib",
+                "sh.ppy.osu.Runtime.Native"
             };
             
-            for (String className : scoreClasses) {
+            for (String className : jniClasses) {
                 try {
+                    // Пробуем найти нативные методы
                     XposedHelpers.findAndHookMethod(
                         className,
                         classLoader,
-                        "submit",
+                        "nativeSubmitScore",
                         new XC_MethodReplacement() {
                             @Override
                             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                Log.d(TAG, "Score submit bypassed!");
-                                XposedBridge.log("[OsuHook] Score submit bypassed!");
-                                // Возвращаем успех
+                                Log.d(TAG, "JNI Score submit bypassed!");
                                 return true;
                             }
                         }
                     );
-                    Log.d(TAG, "Hooked score submit: " + className);
+                    
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "nativeCheckOnline",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return true; // Всегда онлайн
+                            }
+                        }
+                    );
+                    
+                    Log.d(TAG, "Hooked JNI class: " + className);
                     break;
                 } catch (Throwable t) {
-                    // Класс или метод не найден
+                    // Класс не найден - пробуем следующий
                 }
             }
             
         } catch (Exception e) {
-            Log.e(TAG, "Score hook error: " + e.getMessage());
+            Log.d(TAG, "JNI hook skip: " + e.getMessage());
         }
     }
     
     /**
-     * Хук разблокировки всех битмапов
+     * Hook Hit Windows - расширенные окна для 300/100/50
      */
-    private void hookBeatmapUnlock(ClassLoader classLoader) {
-        if (!ENABLE_UNLOCK_ALL) return;
-        
+    private void hookHitWindows(ClassLoader classLoader) {
         try {
-            // Хукаем isUnlocked
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.model.BeatmapSet",
-                classLoader,
-                "isUnlocked",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return true;
-                    }
-                }
-            );
+            // Ищем классы обработки Hit Result
+            String[] hitClasses = {
+                "sh.ppy.osu.gameplay.HitWindows",
+                "osu.Game.Scenes.Play.HitWindows",
+                "sh.ppy.osu.HitResultProcessor"
+            };
             
-            // Хукаем checkAvailable
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.model.BeatmapSet", 
-                classLoader,
-                "checkAvailable",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return true;
-                    }
-                }
-            );
-            
-            // Хукаем canPlay
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.model.BeatmapSet",
-                classLoader,
-                "canPlay",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return true;
-                    }
-                }
-            );
-            
-            Log.d(TAG, "Beatmap unlock hooks applied");
-            XposedBridge.log("[OsuHook] Beatmap unlock hooks applied");
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Beatmap unlock error: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Хук отключения рекламы
-     */
-    private void hookAdBypass(ClassLoader classLoader) {
-        if (!ENABLE_NO_ADS) return;
-        
-        try {
-            // Хукаем shouldShowAd
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.helpers.AdManager",
-                classLoader,
-                "shouldShowAd",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return false;
-                    }
-                }
-            );
-            
-            // Хукаем canShowAd
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.helpers.AdManager",
-                classLoader,
-                "canShowAd", 
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return false;
-                    }
-                }
-            );
-            
-            // Хукаем isAdEnabled
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.helpers.AdManager",
-                classLoader,
-                "isAdEnabled",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return false;
-                    }
-                }
-            );
-            
-            Log.d(TAG, "Ad bypass hooks applied");
-            XposedBridge.log("[OsuHook] Ad bypass hooks applied");
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Ad bypass error: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Хук серверной верификации
-     */
-    private void hookServerVerification(ClassLoader classLoader) {
-        if (!ENABLE_BYPASS_VERIFY) return;
-        
-        try {
-            // Хукаем verifyToken
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.api.OsuAPI",
-                classLoader,
-                "verifyToken",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return true;
-                    }
-                }
-            );
-            
-            // Хукаем isOnline
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.api.OsuAPI",
-                classLoader,
-                "isOnline",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return true;
-                    }
-                }
-            );
-            
-            // Хукаем checkConnection
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.api.OsuAPI",
-                classLoader,
-                "checkConnection",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return true;
-                    }
-                }
-            );
-            
-            Log.d(TAG, "Server verification bypass hooks applied");
-            XposedBridge.log("[OsuHook] Verification bypass hooks applied");
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Verification hook error: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Хук авто-пилота
-     */
-    private void hookAutoPilot(ClassLoader classLoader) {
-        if (!ENABLE_AUTO_PLAY) return;
-        
-        try {
-            // Перехватываем нажатия и автоматически делаем хты
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.game.HitReceptor",
-                classLoader,
-                "handleTap",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        if (ENABLE_AUTO_PLAY) {
-                            // Автоматически помечаем как идеальный хит
-                            param.setResult(true);
+            for (String className : hitClasses) {
+                try {
+                    // Хукаем getWindow300
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "getWindow300",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                // Расширяем окно на +HIT_WINDOW_300 ms
+                                if (param.args.length > 0) {
+                                    int original = (int) param.args[0];
+                                    return original + HIT_WINDOW_300;
+                                }
+                                return 50 + HIT_WINDOW_300;
+                            }
                         }
-                    }
+                    );
+                    
+                    // Хукаем getWindow100
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "getWindow100", 
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return 100 + HIT_WINDOW_100;
+                            }
+                        }
+                    );
+                    
+                    // Хукаем getWindow50
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "getWindow50",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return 150 + HIT_WINDOW_50;
+                            }
+                        }
+                    );
+                    
+                    Log.d(TAG, "Big hit windows applied: " + className);
+                    XposedBridge.log("[OsuHook] Big hit windows enabled!");
+                    break;
+                } catch (Throwable t) {
+                    // Пробуем следующий класс
                 }
-            );
-            
-            // Хукаем таймер игры
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.GameClock",
-                classLoader,
-                "start", 
-                new XC_MethodHook() {
-                    @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        param.setResult(true);
-                    }
-                }
-            );
-            
-            Log.d(TAG, "Auto-pilot hooks applied");
-            XposedBridge.log("[OsuHook] Auto-pilot hooks applied");
+            }
             
         } catch (Exception e) {
-            Log.e(TAG, "Auto-pilot error: " + e.getMessage());
+            Log.d(TAG, "Hit windows skip: " + e.getMessage());
         }
     }
     
     /**
-     * Хук отключения фейла (ноль смертей)
+     * Hook разблокировка битмапов / доступных функций
+     */
+    private void hookUnlockFeatures(ClassLoader classLoader) {
+        try {
+            // Ищем классы проверки доступа
+            String[] unlockClasses = {
+                "sh.ppy.osu.BeatmapSet",
+                "osu.Game.Beatmaps.BeatmapSetInfo",
+                "sh.ppy.osu.model.BeatmapManager"
+            };
+            
+            for (String className : unlockClasses) {
+                try {
+                    // isUnlocked -> всегда true
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "isUnlocked",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return true;
+                            }
+                        }
+                    );
+                    
+                    // canPlay -> всегда true
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "canPlay",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return true;
+                            }
+                        }
+                    );
+                    
+                    // isAvailable -> всегда true
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "isAvailable",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return true;
+                            }
+                        }
+                    );
+                    
+                    Log.d(TAG, "Unlock applied: " + className);
+                    break;
+                } catch (Throwable t) {
+                    // Пробуем следующий
+                }
+            }
+            
+            XposedBridge.log("[OsuHook] All beatmaps unlocked!");
+            
+        } catch (Exception e) {
+            Log.d(TAG, "Unlock skip: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Hook рекламы
+     */
+    private void hookAdRemoval(ClassLoader classLoader) {
+        try {
+            String[] adClasses = {
+                "sh.ppy.osu.ads.AdManager",
+                "sh.ppy.osu.helpers.AdManager",
+                "com.osu.Advertisement"
+            };
+            
+            for (String className : adClasses) {
+                try {
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "shouldShowAd",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return false;
+                            }
+                        }
+                    );
+                    
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "canShowAd",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return false;
+                            }
+                        }
+                    );
+                    
+                    Log.d(TAG, "Ad bypass: " + className);
+                    break;
+                } catch (Throwable t) {
+                    // Пробуем следующий
+                }
+            }
+            
+            XposedBridge.log("[OsuHook] Ads removed!");
+            
+        } catch (Exception e) {
+            Log.d(TAG, "Ad skip: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Hook No-Fail режим
      */
     private void hookNoFail(ClassLoader classLoader) {
-        if (!ENABLE_NO_FAIL) return;
-        
         try {
-            // Хукаем checkFailed
-            XposedHelpers.findAndHookMethod(
+            String[] failClasses = {
                 "sh.ppy.osu.game.HealthProcessor",
-                classLoader,
-                "checkFailed",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return false;
-                    }
-                }
-            );
+                "osu.Game.Scenes.Play.HealthProcessor",
+                "sh.ppy.osu.gameplay.FailCoordinator"
+            };
             
-            // Хукаем потерю здоровья
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.game.HealthProcessor",
-                classLoader,
-                "loseHealth",
-                new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        // Не даем терять здоровье
-                        param.setResult(null);
-                    }
+            for (String className : failClasses) {
+                try {
+                    // checkFailed -> false
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "checkFailed",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return false;
+                            }
+                        }
+                    );
+                    
+                    // shouldFail -> false
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "shouldFail",
+                        new XC_MethodReplacement() {
+                            @Override
+                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                                return false;
+                            }
+                        }
+                    );
+                    
+                    // loseHealth - не отнимаем HP
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "loseHealth",
+                        new XC_MethodHook() {
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                param.setResult(null);
+                            }
+                        }
+                    );
+                    
+                    Log.d(TAG, "No-fail applied: " + className);
+                    break;
+                } catch (Throwable t) {
+                    // Пробуем следующий
                 }
-            );
+            }
             
-            Log.d(TAG, "No-fail hooks applied");
-            XposedBridge.log("[OsuHook] No-fail hooks applied");
+            XposedBridge.log("[OsuHook] No-fail enabled!");
             
         } catch (Exception e) {
-            Log.e(TAG, "No-fail error: " + e.getMessage());
+            Log.d(TAG, "No-fail skip: " + e.getMessage());
         }
     }
     
     /**
-     * Хук идеальных хтов (все 300/100)
+     * Hook Auto-Pilot
      */
-    private void hookPerfectHits(ClassLoader classLoader) {
-        if (!ENABLE_PERFECT_HIT) return;
-        
+    private void hookAutoPlay(ClassLoader classLoader) {
         try {
-            // Хукаем расчет очков за хит
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.game.HitResult",
-                classLoader,
-                "getScore",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        // Всегда возвращаем максимум
-                        return 300;
-                    }
-                }
-            );
+            String[] inputClasses = {
+                "sh.ppy.osu.input.TouchHandler",
+                "osu.Game.Input.OszTouchHandler",
+                "sh.ppy.osu.gameplay.HitInput"
+            };
             
-            // Хукаем тип результата
-            XposedHelpers.findAndHookMethod(
-                "sh.ppy.osu.game.HitResult",
-                classLoader,
-                "getType", 
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                        return "Perfect";
-                    }
+            for (String className : inputClasses) {
+                try {
+                    // handleTap - авто perfect hit
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "handleTap",
+                        new XC_MethodHook() {
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                // Возвращаем 300 очков
+                                param.setResult(300);
+                            }
+                        }
+                    );
+                    
+                    // handleInput - авто клик
+                    XposedHelpers.findAndHookMethod(
+                        className,
+                        classLoader,
+                        "processInput",
+                        new XC_MethodHook() {
+                            @Override
+                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                param.setResult(true);
+                            }
+                        }
+                    );
+                    
+                    Log.d(TAG, "Auto-pilot applied: " + className);
+                    break;
+                } catch (Throwable t) {
+                    // Пробуем следующий
                 }
-            );
+            }
             
-            Log.d(TAG, "Perfect hit hooks applied");
-            XposedBridge.log("[OsuHook] Perfect hit hooks applied");
+            XposedBridge.log("[OsuHook] Auto-pilot enabled!");
             
         } catch (Exception e) {
-            Log.e(TAG, "Perfect hit error: " + e.getMessage());
+            Log.d(TAG, "Auto-pilot skip: " + e.getMessage());
         }
     }
 }

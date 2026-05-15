@@ -30,11 +30,11 @@
 
         <meta-data
             android:name="xposeddescription"
-            android:value="Xposed module for osu!mobile - bypass restrictions, auto-pil, score hack" />
+            android:value="Xposed module for osu!lazer - big hit windows, no-fail, auto-pilot, unlock all beatmaps, no ads" />
 
         <meta-data
             android:name="xposedscope"
-            android:value="['sh.ppy.osu']"
+            android:value="sh.ppy.osu"
             tools:replace="android:value" />
 
     </application>
