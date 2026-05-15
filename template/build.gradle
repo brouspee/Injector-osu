@@ -1,5 +1,5 @@
-// Gradle build for LSPosed Module
-apply plugin: 'com.android.library'
+// Gradle build for Xposed/LSPosed Module
+apply plugin: 'com.android.application'
 
 android {
     namespace 'com.osuhooker'
@@ -8,6 +8,7 @@ android {
     defaultConfig {
         minSdk 21
         targetSdk 34
+        applicationId "com.osuhooker"
     }
     
     compileOptions {
@@ -18,5 +19,4 @@ android {
 
 dependencies {
     compileOnly 'de.robv.android.xposed:api:82'
-    compileOnly 'de.robv.android.xposed:api:82:dex'
 }

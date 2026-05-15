@@ -1,21 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest version="1" package="com.osuhooker">
-    <!-- osu!lazer COMPLETE HOOKER - Xposed/LSPosed -->
+<manifest package="com.osuhooker" xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <application>
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <application android:label="OsuHooker">
+        
         <!-- Xposed info -->
         <meta-data 
-            name="xposedmodule"
-            value="com.osuhooker.OsuHooker" />
+            android:name="xposedmodule"
+            android:value="true" />
         <meta-data 
-            name="xposedminversion"
-            value="14" />
+            android:name="xposedmoddescription"
+            android:value="osu!lazer timing hooker" />
         
-        <!-- LSPosed info -->
-        <meta-data 
-            name="org.lsposed.manager"
-            value="true" />
     </application>
-    
-    <uses-package name="com.ppy.osulazer" />
 </manifest>
