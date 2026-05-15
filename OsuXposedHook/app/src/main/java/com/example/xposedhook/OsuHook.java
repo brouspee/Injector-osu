@@ -63,7 +63,10 @@ public class OsuHook implements IXposedHookLoadPackage {
         try {
             Log.d(TAG, "Hooking native libs...");
             
-            // Находим и хучим JNI методы
+            // Hook реальный Activity класс
+            hookGameActivity(lpparam.classLoader);
+            
+            // Hook JNI методы
             hookJNIMethods(classLoader);
             
             // Hook hit windows (расширенные)
@@ -99,21 +102,59 @@ public class OsuHook implements IXposedHookLoadPackage {
     }
     
     /**
+     * Hook OsuGameActivity - главный класс игры
+     */
+    private void hookGameActivity(ClassLoader classLoader) {
+        // Пробуем разные варианты имени класса
+        String[] activityClasses = {
+            "sh.ppy.osulazer.OsuGameActivity",
+            "crc64f3e94a995e5d9e96.OsuGameActivity",
+            "sh.ppy.osu.lazer.OsuGameActivity"
+        };
+        
+        for (String className : activityClasses) {
+            try {
+                XposedHelpers.findAndHookMethod(
+                    className,
+                    classLoader,
+                    "onCreate",
+                    android.os.Bundle.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            Log.d(TAG, "OsuGameActivity.onCreate hooked!");
+                            XposedBridge.log("[OsuHook] Activity created - hooks active!");
+                        }
+                        
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            // После создания - инициализируем хуки
+                        }
+                    }
+                );
+                Log.d(TAG, "Hooked: " + className);
+                break;
+            } catch (Throwable t) {
+                Log.d(TAG, "Not found: " + className);
+            }
+        }
+    }
+    
+    /**
      * Hook JNI методы (мост между Java и native)
      */
     private void hookJNIMethods(ClassLoader classLoader) {
         try {
-            // Ищем JNI класс - обычно в osu android есть нативные методы
+            // Реальные JNI классы osu
             String[] jniClasses = {
-                "sh.ppy.osu.lazer.NativeBridge",
-                "sh.ppy.osu.NativeHooks",
-                "com.osu.lazer.NativeLib",
-                "sh.ppy.osu.Runtime.Native"
+                "sh.ppy.osulazer.NativeBridge",
+                "sh.ppy.osulazer.Runtime",
+                "sh.ppy.osulazer.Library"
             };
             
             for (String className : jniClasses) {
                 try {
-                    // Пробуем найти нативные методы
+                    // Hook отправки счета
                     XposedHelpers.findAndHookMethod(
                         className,
                         classLoader,
@@ -127,6 +168,7 @@ public class OsuHook implements IXposedHookLoadPackage {
                         }
                     );
                     
+                    // Hook онлайн проверки
                     XposedHelpers.findAndHookMethod(
                         className,
                         classLoader,
@@ -134,7 +176,7 @@ public class OsuHook implements IXposedHookLoadPackage {
                         new XC_MethodReplacement() {
                             @Override
                             protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                return true; // Всегда онлайн
+                                return true;
                             }
                         }
                     );
@@ -142,7 +184,7 @@ public class OsuHook implements IXposedHookLoadPackage {
                     Log.d(TAG, "Hooked JNI class: " + className);
                     break;
                 } catch (Throwable t) {
-                    // Класс не найден - пробуем следующий
+                    // Класс не найден
                 }
             }
             
