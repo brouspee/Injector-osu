@@ -1,86 +1,67 @@
-# osu!lazer Hook - Root Only Solutions
-# ============================
+# osu!lazer HOOKER + LOADER
+# ====================
 
-## Если LSPosed НЕ работает:
+## ГОТОВЫЕ ФАЙЛЫ:
 
-### Вариант 1: Magisk Zygisk (РЕКОМЕНДУЮ)
+### 1. HOOKER (Xposed/LSPosed)
+📁 `template/` - полный Xposed/LSPosed модуль
 
-В Magisk > Настройки > Zygisk → ✅ Включить
-
-Zygisk позволяет хукать без LSPosed!
-
-
-### Вариант 2: KernelSU
-
-Скачай KernelSU - альтернатива Magisk с встроенным хукингом:
-https://github.com/KernelSU/KernelSU
-
-После установки - создай модуль как в template/
-
-
-### Вариант 3: Magisk Module (Самый простой!)
-
-Создай модуль в /data/adb/modules/:
-
-```bash
-# На телефоне в Termux с root:
-mkdir -p /data/adb/modules/OsuHooker
-cd /data/adb/modules/OsuHooker
-
-# Создай файл модуля:
-cat > module.prop << 'EOF'
-id=OsuHooker
-name=OsuHooker
-version=1.0
-author=hook
-description=osu!lazer timing hooks
-EOF
-
-# Создай скрипт который запускается при загрузке:
-cat > post-fs-data.sh << 'EOF'
-#!/system/bin/sh
-# Hook запускается после загрузки osu!lazer
-# Требует Frida или Zygisk
-
-PID=$(pidof com.ppy.osulazer)
-if [ -n "$PID" ]; then
-    echo "[OsuHooker] Hooking PID: $PID"
-    # Здесь добавь хук код
-fi
-EOF
-
-chmod 755 post-fs-data.sh
-```
-
-Это базовый каркас - реальный хук сложнее без LSPosed.
-
-
-### Вариант 4: Просто Frida
-
-```bash
-# PC:
-frida -U -f com.ppy.osulazer -l hooker.js
-```
-
-Это работает с root на PC!
-
-
-### Вариант 5: Root + App Process Hook
-
-Есть приложения в Play Market для хукинга:
-- "Process Hook" 
-- "Game Guardian"
-- "Game Killer"
-
-Но они сложные в настройке.
-
+### 2. LOADER
+📁 `loader/` - лаунчер для osu!lazer
 
 ---
 
-## Короче:
+## КАК УСТАНОВИТЬ:
 
-1. **Включи Zygisk** в Magisk (самый простой)
-2. Используй Frida с PC
-3. Или найди другое устройство с LSPosed
+### Xposed/LSPosed модуль (HOOKER):
 
-Какой у тебя рут менеджер? (Magisk / KernelSU / другое)
+```
+1. Скачай template/ с GitHub
+2. Открой в Android Studio
+3. Build → Build APK
+4. Установи APK
+5. Включи в Xposed/LSPosed Manager
+6. Перезагрузи
+```
+
+### Loader (ЛАУНЧЕР):
+
+```
+1. Скачай loader/ с GitHub
+2. Скомпилируй в APK
+3. Установи
+4. Открывай игру через Loader!
+```
+
+---
+
+## НАСТРОЙКИ (измени в OsuHooker.java):
+
+```java
+// Тайминги (в миллисекундах)
+GREAT = 50.0;    // Great: 50ms
+OK = 100.0;      // Ok: 100ms  
+MEH = 150.0;     // Meh: 150ms
+MISS = 400.0;    // Miss: 400ms
+
+// Размер кругов
+RADIUS_MULT = 3.0f;  // x3 = в 3 раза больше
+
+// Время появления (больше = медленнее)
+PREEMPT = 1800.0;
+```
+
+---
+
+## ХУКИ:
+
+1. **SetDifficulty** → G=50, O=100, M=150
+2. **WindowFor** → 50/100/150/400
+3. **getScale** → x3
+4. **getRadius** → x3
+5. **getTimePreempt** → 1800ms
+6. **getStackOffset** → 0
+
+**Основано на ppy/osu:**
+- osu.Game.Rulesets.Osu.Scoring.OsuHitWindows
+- osu.Game.Rulesets.Osu.Objects.OsuHitObject

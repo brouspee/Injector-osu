@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest version="1" package="com.osuhooker">
-    <!-- osu!lazer LSPosed Module -->
+    <!-- osu!lazer COMPLETE HOOKER - Xposed/LSPosed -->
     
     <application>
-        <meta-data
+        <!-- Xposed info -->
+        <meta-data 
+            name="xposedmodule"
+            value="com.osuhooker.OsuHooker" />
+        <meta-data 
+            name="xposedminversion"
+            value="14" />
+        
+        <!-- LSPosed info -->
+        <meta-data 
             name="org.lsposed.manager"
             value="true" />
     </application>
     
-    <!-- osu!lazer package -->
     <uses-package name="com.ppy.osulazer" />
-    
-    <!-- Required for Xposed -->
-    <uses-library name="com.android.category.LSPOSED" required="true"/>
 </manifest>
