@@ -31,14 +31,15 @@ jobs:
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          chmod +x gradlew
-          ./gradlew assembleDebug --info
+          cd OsuXposedHook
+          chmod +x ../gradlew
+          ../gradlew assembleDebug
 
       - name: List generated APKs
-        run: ls -la app/build/outputs/apk/debug/
+        run: ls -la OsuXposedHook/app/build/outputs/apk/debug/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: osu-injector.apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: osu-xposed-hook.apk
+          path: OsuXposedHook/app/build/outputs/apk/debug/*.apk
