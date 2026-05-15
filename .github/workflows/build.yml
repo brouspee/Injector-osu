@@ -31,9 +31,11 @@ jobs:
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          cd OsuXposedHook
-          chmod +x ../gradlew
-          ../gradlew assembleDebug
+          # Download gradle wrapper jar
+          mkdir -p gradle/wrapper
+          curl -sL "https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
       - name: List generated APKs
         run: ls -la OsuXposedHook/app/build/outputs/apk/debug/

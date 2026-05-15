@@ -30,11 +30,11 @@
 
         <meta-data
             android:name="xposeddescription"
-            android:value="Xposed module for osu!lazer - big hit windows, no-fail, auto-pilot, unlock all beatmaps, no ads" />
+            android:value="osu!lazer Hit Windows x1.5, Big Circles, Unlock" />
 
         <meta-data
             android:name="xposedscope"
-            android:value="sh.ppy.osulazer"
+            android:value="['sh.ppy.osulazer']"
             tools:replace="android:value" />
 
     </application>
