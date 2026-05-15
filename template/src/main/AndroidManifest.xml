@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="com.osuhooker" xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <application android:label="OsuHooker">
+        
+        <!-- Xposed Module -->
+        <meta-data 
+            android:name="xposedmodule"
+            android:value="true" />
+        <meta-data 
+            android:name="xposedmoddescription"
+            android:value="osu!lazer easy timing + big circles" />
+        <meta-data 
+            android:name="xposedminversion"
+            android:value="14" />
+        
+        <!-- Launcher Activity -->
+        <activity android:name="com.osuhooker.OsuHooker" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        
+    </application>
+</manifest>

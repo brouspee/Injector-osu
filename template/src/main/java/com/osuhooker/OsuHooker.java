@@ -5,86 +5,77 @@
 
 package com.osuhooker;
 
-import android.app.Application;
+import android.app.Activity;
+import android.os.Bundle;
+import android.widget.TextView;
+import android.view.View;
 import android.util.Log;
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage;
 
-public class OsuHooker extends Application implements IXposedHookLoadPackage {
+/**
+ * osu!lazer Xposed Module - работает!
+ * Запускается при загрузке osu!lazer
+ */
+public class OsuHooker extends Activity implements IXposedHookLoadPackage {
 
-    // ══════════════════════════════════════
-    // НАСТРОЙКИ (измени тут)
-    // ══════════════════════════════════════
+    // Тайминги
+    private static final double GREAT = 50.0;
+    private static final double OK = 100.0;
+    private static final double MEH = 150.0;
+    private static final double MISS = 400.0;
     
-    // Тайминги (в миллисекундах)
-    private static final double GREAT = 50.0;   // Great: 50ms
-    private static final double OK = 100.0;    // Ok: 100ms  
-    private static final double MEH = 150.0;  // Meh: 150ms
-    private static final double MISS = 400.0; // Miss: 400ms
-    
-    // Размер кругов (x1 = обычный, x3 = в 3 раза больше)
+    // Размер
     private static final float RADIUS_MULT = 3.0f;
-    
-    // Время появления (450-1800ms, больше = медленнее)
     private static final double PREEMPT = 1800.0;
-    
-    // Только osu!lazer?
-    private static final boolean ONLY_OSU = false;
-    
-    // ══════════════════════════════════════
-    // Константы
-    // ══════════════════════════════════════
     
     private static final String TAG = "OsuHooker";
     private static final String TARGET = "com.ppy.osulazer";
 
+    // Activity - показывает что модуль работает!
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        TextView tv = new TextView(this);
+        tv.setText("OsuHooker AKTIV!\n\nTiming: G=" + GREAT + " O=" + OK + " M=" + MEH + "\nRadius: x" + RADIUS_MULT + "\n\nXposed module loaded!");
+        tv.setPadding(50, 50, 50, 50);
+        tv.setTextSize(20);
+        setContentView(tv);
+        
+        Log.d(TAG, "Module Activity opened!");
+    }
+    
+    // Главный хук - вызывается при загрузке любого приложения
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
         
-        if (!ONLY_OSU && !lpparam.packageName.equals(TARGET)) return;
+        if (!lpparam.packageName.equals(TARGET)) return;
         
-        log("Hooking: " + lpparam.packageName);
+        Log.d(TAG, "Hooking: " + TARGET);
         
         try {
-            // ХУК: SetDifficulty
             hookSetDifficulty(lpparam);
-            
-            // ХУК: WindowFor  
             hookWindowFor(lpparam);
-            
-            // ХУК: Scale
             hookScale(lpparam);
-            
-            // ХУК: Radius
             hookRadius(lpparam);
-            
-            // ХУК: TimePreempt (AR)
             hookTimePreempt(lpparam);
             
-            // ХУК: StackOffset
-            hookStackOffset(lpparam);
-            
-            log("✅ Loaded! G=" + GREAT + " O=" + OK + " M=" + MEH + " R=" + RADIUS_MULT + "x");
-            
+            Log.d(TAG, "✅ Loaded! G=" + GREAT + " O=" + OK + " M=" + MEH + " R=" + RADIUS_MULT + "x");
         } catch (Throwable e) {
-            log("Error: " + e.getMessage());
+            Log.e(TAG, "Error: " + e.getMessage());
             XposedBridge.log(e);
         }
     }
-    
-    // ══════════════════════════════════════
-    // Х У К И
-    // ══════════════════════════════════════
     
     private void hookSetDifficulty(XC_LoadPackage.LoadPackageParam lpparam) {
         try {
             XposedHelpers.findAndHookMethod(
                 "osu.Game.Rulesets.Osu.Scoring.OsuHitWindows",
                 lpparam.classLoader,
-                "setDifficulty",
-                double.class,
+                "setDifficulty", double.class,
                 new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) {
@@ -94,9 +85,9 @@ public class OsuHooker extends Application implements IXposedHookLoadPackage {
                         param.setResult(null);
                     }
                 });
-            log("✅ SetDifficulty");
+            Log.d(TAG, "✅ SetDifficulty");
         } catch (Exception e) {
-            log("⚠️ SetDifficulty: " + e.getMessage());
+            Log.d(TAG, "⚠️ SetDifficulty: " + e.getMessage());
         }
     }
     
@@ -105,24 +96,23 @@ public class OsuHooker extends Application implements IXposedHookLoadPackage {
             XposedHelpers.findAndHookMethod(
                 "osu.Game.Rulesets.Osu.Scoring.OsuHitWindows",
                 lpparam.classLoader,
-                "windowFor",
-                int.class,
+                "windowFor", int.class,
                 new XC_MethodReplacement() {
                     @Override
                     protected Object replaceHookedMethod(MethodHookParam param) {
                         int r = (int) param.args[0];
                         switch (r) {
-                            case 0: return GREAT;  // Great
-                            case 1: return OK;    // Ok
-                            case 2: return MEH;   // Meh
-                            case 3: return MISS;   // Miss
+                            case 0: return GREAT;
+                            case 1: return OK;
+                            case 2: return MEH;
+                            case 3: return MISS;
                             default: return 0.0;
                         }
                     }
                 });
-            log("✅ WindowFor");
+            Log.d(TAG, "✅ WindowFor");
         } catch (Exception e) {
-            log("⚠️ WindowFor: " + e.getMessage());
+            Log.d(TAG, "⚠️ WindowFor: " + e.getMessage());
         }
     }
     
@@ -139,9 +129,9 @@ public class OsuHooker extends Application implements IXposedHookLoadPackage {
                         return orig * RADIUS_MULT;
                     }
                 });
-            log("✅ getScale");
+            Log.d(TAG, "✅ getScale");
         } catch (Exception e) {
-            log("⚠️ getScale: " + e.getMessage());
+            Log.d(TAG, "⚠️ getScale: " + e.getMessage());
         }
     }
     
@@ -158,9 +148,9 @@ public class OsuHooker extends Application implements IXposedHookLoadPackage {
                         return (double)(64 * scale * RADIUS_MULT);
                     }
                 });
-            log("✅ getRadius");
+            Log.d(TAG, "✅ getRadius");
         } catch (Exception e) {
-            log("⚠️ getRadius: " + e.getMessage());
+            Log.d(TAG, "⚠️ getRadius: " + e.getMessage());
         }
     }
     
@@ -176,35 +166,9 @@ public class OsuHooker extends Application implements IXposedHookLoadPackage {
                         return PREEMPT;
                     }
                 });
-            log("✅ getTimePreempt");
+            Log.d(TAG, "✅ getTimePreempt");
         } catch (Exception e) {
-            log("⚠️ getTimePreempt: " + e.getMessage());
+            Log.d(TAG, "⚠️ getTimePreempt: " + e.getMessage());
         }
-    }
-    
-    private void hookStackOffset(XC_LoadPackage.LoadPackageParam lpparam) {
-        try {
-            XposedHelpers.findAndHookMethod(
-                "osu.Game.Rulesets.Osu.Objects.OsuHitObject",
-                lpparam.classLoader,
-                "getStackOffset",
-                new XC_MethodReplacement() {
-                    @Override
-                    protected Object replaceHookedMethod(MethodHookParam param) {
-                        // Возвращаем Vector2(0,0) для больших кругов
-                        return XposedHelpers.newInstance(
-                            XposedHelpers.findClass("osuTK.Vector2", lpparam.classLoader),
-                            0f, 0f);
-                    }
-                });
-            log("✅ getStackOffset");
-        } catch (Exception e) {
-            log("⚠️ getStackOffset: ignore");
-        }
-    }
-    
-    private static void log(String msg) {
-        Log.d(TAG, msg);
-        XposedBridge.log(TAG + ": " + msg);
     }
 }
