@@ -28,7 +28,6 @@ public class OsuHook implements IXposedHookLoadPackage {
     
     // Feature flags
     public static boolean ENABLE_BIGGER_HITWINDOWS = true;
-    public static boolean ENABLE_BIGGER_CIRCLES = true;
     public static boolean ENABLE_BYPASS_VERIFY = true;
     public static boolean ENABLE_SCORE_HACK = false;
     public static boolean ENABLE_NO_ADS = true;
@@ -44,14 +43,9 @@ public class OsuHook implements IXposedHookLoadPackage {
         XposedBridge.log("[OsuHook] osu!lazer detected - Hit Windows x1.5 ACTIVE!");
         
         try {
-            // Hit Windows hook (1.5x easier)
+            // Hit Windows hook (1.5x easier - larger hit area for 300/100/50)
             if (ENABLE_BIGGER_HITWINDOWS) {
                 hookHitWindows(lpparam.classLoader);
-            }
-            
-            // Bigger approach circles
-            if (ENABLE_BIGGER_CIRCLES) {
-                hookApproachCircles(lpparam.classLoader);
             }
             
             // Score bypass
@@ -77,8 +71,9 @@ public class OsuHook implements IXposedHookLoadPackage {
     }
     
     /**
-     * Hook Hit Windows - make them 1.5x easier
-     * OD10: 80ms → 120ms, 50ms → 75ms, 25ms → 37.5ms
+     * Hook Hit Windows - make hit AREA 1.5x larger
+     * Hit window: 80ms → 120ms, 50ms → 75ms, 25ms → 37.5ms
+     * This means more lenient timing = easier to hit 300/100/50
      */
     private void hookHitWindows(ClassLoader classLoader) {
         try {
@@ -91,7 +86,7 @@ public class OsuHook implements IXposedHookLoadPackage {
             
             for (String className : hitClasses) {
                 try {
-                    // Hook window functions
+                    // Hook window functions - larger = easier
                     XposedHelpers.findAndHookMethod(
                         className,
                         classLoader,
@@ -137,43 +132,6 @@ public class OsuHook implements IXposedHookLoadPackage {
             
         } catch (Exception e) {
             Log.e(TAG, "Hit windows error: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Hook approach circles - make them bigger
-     */
-    private void hookApproachCircles(ClassLoader classLoader) {
-        try {
-            String[] circleClasses = {
-                "osu.Game.Skinning.Drawables.CirclePiece",
-                "osu.Game.Play.HitObject",
-                "sh.ppy.osulazer.CirclePiece"
-            };
-            
-            for (String className : circleClasses) {
-                try {
-                    XposedHelpers.findAndHookMethod(
-                        className,
-                        classLoader,
-                        "getApproachRate",
-                        new XC_MethodReplacement() {
-                            @Override
-                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                double normal = (double) param.getResult();
-                                return normal * 0.5;
-                            }
-                        }
-                    );
-                    
-                    Log.d(TAG, "Approach circles hooked: " + className);
-                    break;
-                } catch (Throwable t) {
-                    // continue
-                }
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Circle error: " + e.getMessage());
         }
     }
     
