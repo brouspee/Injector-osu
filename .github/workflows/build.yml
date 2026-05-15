@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew assembleDebug -c settings.gradle.kts
+          ./gradlew :app:assembleDebug
 
       - name: List generated APKs
         run: ls -la OsuXposedHook/app/build/outputs/apk/debug/

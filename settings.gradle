@@ -15,4 +15,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "OsuXposedHook"
-include(":app")
+include("app")
+project(":app").projectDir = file("OsuXposedHook/app")
