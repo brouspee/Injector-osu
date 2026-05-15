@@ -152,74 +152,67 @@ public class OsuHook implements IXposedHookLoadPackage {
     }
     
     /**
-     * Hook Hit Windows - расширенные окна для 300/100/50
+     * Hook Hit Windows - РЕАЛЬНЫЕ классы из исходников ppy/osu
+     * osu.Game/Rulesets/Osu/Scoring/OsuHitWindows.cs
+     * osu.Game/Rulesets/OsU/Scoring/HitWindows.cs
      */
     private void hookHitWindows(ClassLoader classLoader) {
         try {
-            // Ищем классы обработки Hit Result
+            // Реальные классы из osu! source
             String[] hitClasses = {
-                "sh.ppy.osu.gameplay.HitWindows",
-                "osu.Game.Scenes.Play.HitWindows",
-                "sh.ppy.osu.HitResultProcessor"
+                // osu! ruleset hit windows
+                "osu.Game.Rulesets.Osu.Scoring.OsuHitWindows",
+                "osu.Game.Rulesets.Osu.Scoring.HitWindows", 
+                "osu.Game.Rulesets.Scoring.HitWindows",
+                // framework base
+                "osu.Framework.Gameplay.HitWindows",
+                "osu.Framework.Graphics.HitWindows",
+                // mania ruleset
+                "osu.Game.Rulesets.Mania.Scoring.ManiaHitWindows",
+                "osu.Game.Rulesets.Mania.Scoring.HitWindows"
             };
             
             for (String className : hitClasses) {
                 try {
-                    // Хукаем getWindow300
-                    XposedHelpers.findAndHookMethod(
-                        className,
-                        classLoader,
-                        "getWindow300",
-                        new XC_MethodReplacement() {
-                            @Override
-                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                // Расширяем окно на +HIT_WINDOW_300 ms
-                                if (param.args.length > 0) {
-                                    int original = (int) param.args[0];
-                                    return original + HIT_WINDOW_300;
-                                }
-                                return 50 + HIT_WINDOW_300;
-                            }
-                        }
-                    );
+                    // WindowFor - основной метод получения окна
+                    hookMethod(className, classLoader, "WindowFor", 300, HIT_WINDOW_300);
+                    hookMethod(className, classLoader, "WindowFor", 100, HIT_WINDOW_100);
+                    hookMethod(className, classLoader, "WindowFor", 50, HIT_WINDOW_50);
                     
-                    // Хукаем getWindow100
-                    XposedHelpers.findAndHookMethod(
-                        className,
-                        classLoader,
-                        "getWindow100", 
-                        new XC_MethodReplacement() {
-                            @Override
-                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                return 100 + HIT_WINDOW_100;
-                            }
-                        }
-                    );
+                    // GetX - альтернативные методы
+                    hookMethodFloat(className, classLoader, "GetWindow300", 50 + HIT_WINDOW_300);
+                    hookMethodFloat(className, classLoader, "GetWindow100", 100 + HIT_WINDOW_100);
+                    hookMethodFloat(className, classLoader, "GetWindow50", 150 + HIT_WINDOW_50);
                     
-                    // Хукаем getWindow50
-                    XposedHelpers.findAndHookMethod(
-                        className,
-                        classLoader,
-                        "getWindow50",
-                        new XC_MethodReplacement() {
-                            @Override
-                            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-                                return 150 + HIT_WINDOW_50;
-                            }
-                        }
-                    );
-                    
-                    Log.d(TAG, "Big hit windows applied: " + className);
-                    XposedBridge.log("[OsuHook] Big hit windows enabled!");
+                    Log.d(TAG, "Hit windows hooked: " + className);
+                    XposedBridge.log("[OsuHook] Big hit windows: " + className);
                     break;
                 } catch (Throwable t) {
-                    // Пробуем следующий класс
+                    // Пробуем следующий
                 }
             }
             
         } catch (Exception e) {
-            Log.d(TAG, "Hit windows skip: " + e.getMessage());
+            Log.d(TAG, "Hit windows error: " + e.getMessage());
         }
+    }
+    
+    private void hookMethod(String className, ClassLoader cl, String method, int baseValue, int bonus) {
+        XposedHelpers.findAndHookMethod(className, cl, method, int.class, new XC_MethodReplacement() {
+            @Override
+            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                return baseValue + bonus;
+            }
+        });
+    }
+    
+    private void hookMethodFloat(String className, ClassLoader cl, String method, float newValue) {
+        XposedHelpers.findAndHookMethod(className, cl, method, new XC_MethodReplacement() {
+            @Override
+            protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                return newValue;
+            }
+        });
     }
     
     /**
