@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 public class OsuHook implements IXposedHookLoadPackage {
     
     private static final String TAG = "OsuHook";
-    private static final String TARGET_PACKAGE = "sh.ppy.osu";
+    private static final String TARGET_PACKAGE = "sh.ppy.osulazer";
     
     // Конфигурация хуков
     public static boolean ENABLE_BYPASS_VERIFY = true;

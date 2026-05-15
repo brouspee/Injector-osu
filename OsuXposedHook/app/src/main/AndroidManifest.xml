@@ -34,7 +34,7 @@
 
         <meta-data
             android:name="xposedscope"
-            android:value="sh.ppy.osu"
+            android:value="sh.ppy.osulazer"
             tools:replace="android:value" />
 
     </application>
