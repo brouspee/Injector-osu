@@ -24,7 +24,14 @@ public class Main implements IXposedHookLoadPackage {
     public static final String TARGET_PACKAGE = "sh.ppy.osulazer";
     
     // Hit windows multiplier (1.5x = 50% easier)
-    public static final double HIT_WINDOW_MULTIPLIER = 1.5;
+    // MODDED: from C# source - Great=400, OK=500, Meh=600
+    public static final double HIT_WINDOW_MULTIPLIER = 1.0;
+    public static final double GREAT_WINDOW = 400.0;
+    public static final double OK_WINDOW = 500.0;
+    public static final double MEH_WINDOW = 600.0;
+    
+    // Circle radius (MODDED: was 64, now 96)
+    public static final float CIRCLE_RADIUS = 96.0f;
     
     // Feature flags
     public static final boolean ENABLE_BIGGER_HITWINDOWS = true;
@@ -83,36 +90,32 @@ public class Main implements IXposedHookLoadPackage {
             // Try different hit window classes
             String[] hitClasses = {
                 "osu.Game.Rulesets.Osu.Scoring.OsuHitWindows",
-                "osu.Game.Rulesets.Osu.Scoring.HitWindows",
-                "sh.ppy.osulazer.HitWindows",
-                "osu.Game.Scoring.HitWindows",
-                "osu.Game.Rulesets.Scoring.HitWindows"
+                "sh.ppy.osulazer.Scoring.OsuHitWindows",
+                "sh.ppy.osulazer.HitWindows"
             };
             
             for (String className : hitClasses) {
                 try {
-                    // Hook getHitWindow300 - larger = easier to hit
+                    // Hook getHitWindow(double hitType) - returns for Great/OK/Meh
                     XposedHelpers.findAndHookMethod(className, classLoader, "getHitWindow",
                             double.class, new XC_MethodReplacement() {
                                 @Override
                                 protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
-                                    // Get original hit window type (300, 100, 50)
                                     double hitType = (double) param.args[0];
-                                    double baseWindow = 80.0; // Default OD10
-                                    if (hitType == 100) baseWindow = 50.0;
-                                    if (hitType == 50) baseWindow = 25.0;
-                                    // Apply multiplier
-                                    return baseWindow * HIT_WINDOW_MULTIPLIER;
+                                    // MODDED: Great=400, OK=500, Meh=600 from C# source
+                                    if (hitType >= 300) return GREAT_WINDOW;
+                                    if (hitType >= 100) return OK_WINDOW;
+                                    return MEH_WINDOW;
                                 }
                             });
                     
-                    // Direct methods
+                    // Direct methods if exist
                     try {
                         XposedHelpers.findAndHookMethod(className, classLoader, "getHitWindow300",
                                 new XC_MethodReplacement() {
                                     @Override
                                     protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
-                                        return 80.0 * HIT_WINDOW_MULTIPLIER;
+                                        return GREAT_WINDOW;
                                     }
                                 });
                     } catch (Throwable t) {}
@@ -122,7 +125,7 @@ public class Main implements IXposedHookLoadPackage {
                                 new XC_MethodReplacement() {
                                     @Override
                                     protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
-                                        return 50.0 * HIT_WINDOW_MULTIPLIER;
+                                        return OK_WINDOW;
                                     }
                                 });
                     } catch (Throwable t) {}
@@ -132,12 +135,22 @@ public class Main implements IXposedHookLoadPackage {
                                 new XC_MethodReplacement() {
                                     @Override
                                     protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
-                                        return 25.0 * HIT_WINDOW_MULTIPLIER;
+                                        return MEH_WINDOW;
                                     }
                                 });
                     } catch (Throwable t) {}
                     
-                    Log.d(TAG, "Hit windows hooked: " + className);
+                    // Also hook setDifficulty to override parsed values
+                    XposedHelpers.findAndHookMethod(className, classLoader, "setDifficulty",
+                            double.class, new XC_MethodReplacement() {
+                                @Override
+                                protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+                                    // Ignore, hit windows are hardcoded now
+                                    return null;
+                                }
+                            });
+                    
+                    Log.d(TAG, "Hit windows hooked: " + className + " (400/500/600)");
                     break;
                 } catch (Throwable t) {
                     Log.d(TAG, "Not found: " + className + " - " + t.getMessage());
@@ -155,24 +168,31 @@ public class Main implements IXposedHookLoadPackage {
     private void hookCircleHitArea(ClassLoader classLoader) {
         try {
             String[] circleClasses = {
+                "osu.Game.Rulesets.Osu.Objects.OsuHitObject",
                 "osu.Game.Skinning.Drawables.CirclePiece",
-                "osu.Game.Play.HitObjectosu.Game.Skinning",
                 "sh.ppy.osulazer.CirclePiece"
             };
             
             for (String className : circleClasses) {
                 try {
-                    // Make hit circle radius larger
+                    // OBJECT_RADIUS constant (MODDED: 64 -> 96)
+                    XposedHelpers.findAndHookMethod(className, classLoader, "getOBJECT_RADIUS",
+                            new XC_MethodReplacement() {
+                                @Override
+                                protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+                                    return CIRCLE_RADIUS;
+                                }
+                            });
+                    
                     XposedHelpers.findAndHookMethod(className, classLoader, "getRadius",
                             new XC_MethodReplacement() {
                                 @Override
                                 protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
-                                    double original = (double) param.getResult();
-                                    return original * 1.5; // 50% larger
+                                    return (double) CIRCLE_RADIUS;
                                 }
                             });
                     
-                    Log.d(TAG, "Circle hit area hooked: " + className);
+                    Log.d(TAG, "Circle radius hooked: " + className + " (96)");
                     break;
                 } catch (Throwable t) {}
             }
