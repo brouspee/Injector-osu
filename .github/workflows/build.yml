@@ -29,13 +29,17 @@ jobs:
           mkdir -p latest
           mv cmdline-tools/* latest/ 2>/dev/null || true
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --list_installed 2>/dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Display Gradle wrapper version
+        run: |
+          cat gradle/wrapper/gradle-wrapper.properties
+          chmod +x gradlew
+          ./gradlew --version
 
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          chmod +x gradlew
           ./gradlew :app:assembleDebug --stacktrace
 
       - name: List generated APKs
