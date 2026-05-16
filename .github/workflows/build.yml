@@ -17,9 +17,6 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Display Java version
-        run: java -version
-
       - name: Setup Android SDK
         run: |
           mkdir -p $ANDROID_HOME/cmdline-tools
@@ -29,18 +26,12 @@ jobs:
           mkdir -p latest
           mv cmdline-tools/* latest/ 2>/dev/null || true
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-36" "build-tools;36.0.0"
-
-      - name: Display Gradle wrapper version
-        run: |
-          cat gradle/wrapper/gradle-wrapper.properties
-          chmod +x gradlew
-          ./gradlew --version
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Build APK
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          ./gradlew :app:assembleDebug --stacktrace
+          ./gradlew :app:assembleDebug
 
       - name: List generated APKs
         run: ls -la OsuXposedHook/app/build/outputs/apk/debug/
