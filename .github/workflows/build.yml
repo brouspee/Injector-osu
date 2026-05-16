@@ -19,18 +19,20 @@ jobs:
 
       - name: Setup Android SDK
         run: |
-          mkdir -p $ANDROID_HOME/cmdline-tools
-          cd $ANDROID_HOME/cmdline-tools
+          export ANDROID_HOME="$HOME/android-sdk"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          cd "$ANDROID_HOME/cmdline-tools"
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
-          unzip -q cmdline.zip
+          unzip -o -q cmdline.zip
           mkdir -p latest
-          mv cmdline-tools/* latest/ 2>/dev/null || true
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
+          (mv cmdline-tools latest/ 2>/dev/null || true)
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Build APK
         run: |
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "sdk.dir=$HOME/android-sdk" > local.properties
+          chmod +x gradlew
           ./gradlew :app:assembleDebug
 
       - name: List generated APKs
