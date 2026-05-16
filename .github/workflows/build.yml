@@ -17,18 +17,33 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Android SDK
-        uses: bitfunk/action-setup-android@master
-        with:
-          platform-version: 34
-          build-tools-version: 34.0.0
-          include-tools: true
+      - name: Install Android SDK
+        run: |
+          echo "=== Installing Android SDK ==="
+          export ANDROID_SDK_ROOT="$HOME/android-sdk"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          mkdir -p "$ANDROID_SDK_ROOT"
+          cd "$ANDROID_SDK_ROOT"
+          echo "Downloading cmdline-tools..."
+          curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
+          unzip -o -q cmdline-tools.zip
+          mkdir -p cmdline-tools/latest
+          (mv cmdline-tools cmdline-tools/latest/ 2>/dev/null || mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true)
+          ls -la cmdline-tools/
+          ls -la cmdline-tools/latest/bin/ 2>/dev/null || ls -la cmdline-tools/*/bin/ 2>/dev/null || true
+          echo "Accepting licenses..."
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          echo "Installing platforms..."
+          "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
+          ls -la "$ANDROID_SDK_ROOT/platforms/"
 
       - name: Build APK
         run: |
+          export ANDROID_SDK_ROOT="$HOME/android-sdk"
           echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
-          chmod +x gradlew
-          ./gradlew :app:assembleDebug
+          cat local.properties
+          ls -la "$ANDROID_SDK_ROOT/platforms/"
+          ./gradlew :app:assembleDebug 2>&1 | tail -30
 
       - name: List generated APKs
         run: ls -la OsuXposedHook/app/build/outputs/apk/debug/
